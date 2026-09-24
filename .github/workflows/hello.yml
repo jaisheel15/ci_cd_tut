@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Check secret
         env:
-          DEMO_SECRET: ${{ secrets.DEMO_SECRET }}
+          DEMO_SECRET: ${{ Secrets.DEMO_SECRET }}
         run: |
           if [ -n "$DEMO_SECRET" ]; then
             echo "Secret is availabl."
