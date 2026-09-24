@@ -31,7 +31,7 @@ jobs:
           DEMO_SECRET: ${{ Secrets.DEMO_SECRET }}
         run: |
           if [ -n "$DEMO_SECRET" ]; then
-            echo "Secret is availabl."
+            echo "Secret is available."
           else
             echo "Secret is not configured."
             exit 1
