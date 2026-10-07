@@ -1,126 +1,134 @@
-# 09 - Build & Test Pipeline
+# 10 - Final CI/CD Pipeline
 
-## 1. Project Structure
+## 1. Architecture
 
-```text
-09-build-and-test/
-│
-├── app/
-│   ├── __init__.py
-│   └── calculator.py
-│
-├── tests/
-│   └── test_calculator.py
-│
-├── requirements.txt
-├── build.sh
-│
-└── .github/
-    └── workflows/
-        └── ci.yml
+```mermaid
+flowchart TD
+    A[Developer] -->|git push| B[GitHub Repository]
+    B --> C[GitHub Actions]
+    C --> D[TEST]
+    C --> E[SECURITY]
+    D --> F[BUILD]
+    F --> G[ARTIFACT]
 ```
 
 ---
 
-## 2. Run Application
-
-```bash
-python3 app/calculator.py
-```
-
-**Expected:**
-```text
-Calculator Application
-----------------------
-10 + 5 = 15
-10 - 5 = 5
-10 * 5 = 50
-10 / 5 = 2.0
-```
+## 2. Jobs
+The workflow contains three jobs:
+1. `test`
+2. `build`
+3. `security-check`
 
 ---
 
-## 3. Install Dependencies
+## 3. Test Job
+The test job:
+**Checkout** → **Setup Python** → **Install dependencies** → **Run pytest**
 
+---
+
+## 4. Build Job
+The build job runs **only** after tests pass.
+```yaml
+needs: test
+```
+
+**Flow:**
+Test → PASS → Build → Artifact
+
+**If tests fail:**
+Test → FAIL → Build does not run
+
+---
+
+## 5. Security Check
+The security job checks for common sensitive files:
+* `.env`
+* `*.pem`
+* `*.key`
+
+*(This is only a basic classroom demonstration. It is not a complete security scanner.)*
+
+---
+
+## 6. Runner
+All jobs use:
+```yaml
+runs-on: ubuntu-latest
+```
+GitHub provides the runner environment.
+
+---
+
+## 7. Artifact
+The build generates:
+```text
+build/
+├── calculator.py
+└── build-info.txt
+```
+The workflow uploads it as:
+`calculator-build`
+
+---
+
+## 8. Run Locally
+
+**Install dependencies:**
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
----
+**Run application:**
+```bash
+python3 app/calculator.py
+```
 
-## 4. Run Tests
-
+**Run tests:**
 ```bash
 pytest -v
 ```
 
-**Expected:**
-```text
-tests/test_calculator.py::test_add PASSED
-tests/test_calculator.py::test_subtract PASSED
-tests/test_calculator.py::test_multiply PASSED
-tests/test_calculator.py::test_divide PASSED
-tests/test_calculator.py::test_divide_by_zero PASSED
-5 passed
-```
-
----
-
-## 5. Run Build
-
+**Build:**
 ```bash
 chmod +x build.sh
 ./build.sh
 ```
 
-**Expected:**
-```text
-Starting build...
-Build completed successfully.
+---
+
+## 9. Git Commands
+```bash
+git init
+git add .
+git commit -m "Add final CI/CD pipeline"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/session16-cicd-github-actions.git
+git push -u origin main
 ```
 
 ---
 
-## 6. GitHub Actions
-
-The workflow automatically runs when code is pushed to `main`.
-
-```mermaid
-flowchart TD
-    A[git push] --> B[GitHub Actions]
-    B --> C[Checkout]
-    C --> D[Setup Python]
-    D --> E[Install dependencies]
-    E --> F[Run tests]
-    F --> G[Build]
-    G --> H[Upload artifact]
-```
-
----
-
-## 7. Expected GitHub Output
+## 10. Expected Pipeline
+GitHub Actions should show:
 
 ```text
-✓ Checkout source code
-✓ Setup Python
-✓ Show Python version
-✓ Install dependencies
-✓ Run tests
-✓ Build application
-✓ Show build output
-✓ Upload artifact
+Final CI Pipeline
+│
+├── ✓ Test Application
+│
+├── ✓ Security Check
+│
+└── ✓ Build Application
+      │
+      └── ✓ Upload build artifact
 ```
 
 ---
 
-## 8. Failure Test
-
-Change:
-```python
-def add(a, b):
-    return a + b
-```
-to:
+## 11. Failure Scenario
+Break the application intentionally:
 ```python
 def add(a, b):
     return a + b + 1
@@ -130,55 +138,75 @@ Run:
 ```bash
 pytest
 ```
+The test fails. Push the change.
 
 **Expected:**
 ```text
-FAILED tests/test_calculator.py::test_add
+✗ Test Application
 ```
 
-Push:
-```bash
-git add .
-git commit -m "Test pipeline failure"
-git push
-```
-
-GitHub Actions should show:
-```text
-✓ Checkout
-✓ Setup Python
-✓ Install dependencies
-✗ Run tests
-```
-*The pipeline stops because the test failed.*
+Because `build` `needs: test`, the build does not proceed.
 
 ---
 
-## 9. Fix the Code
-
-Change it back:
+## 12. Fix
+Restore:
 ```python
 def add(a, b):
     return a + b
 ```
 
-Then:
+Commit:
 ```bash
 git add .
-git commit -m "Fix calculator"
+git commit -m "Fix application"
 git push
 ```
 
 **Expected:**
 ```text
-✓ Run tests
-✓ Build application
-✓ Upload artifact
+✓ Test Application
+✓ Security Check
+✓ Build Application
+✓ Upload build artifact
 ```
 
 ---
 
-### 💡 Key Takeaway
-A CI pipeline automatically validates code before it moves forward.
+## 13. Complete Concept Map
 
-> **Code** → **Build** → **Test** → **Artifact**
+```text
+CI/CD
+│
+├── CI
+│   ├── Build
+│   └── Test
+│
+├── CD
+│   └── Deliver / Deploy
+│
+└── GitHub Actions
+    │
+    ├── Workflow
+    │
+    ├── Jobs
+    │   ├── Test
+    │   ├── Security
+    │   └── Build
+    │
+    ├── Steps
+    │
+    ├── Runner
+    │
+    ├── Secrets
+    │
+    └── Artifacts
+```
+
+---
+
+### 💡 Final Takeaway
+
+> **git push** → **GitHub Actions** → **Test** → **Security Check** → **Build** → **Artifact** → **Ready for CD / Deployment**
+
+The next step after this session is to connect the pipeline to a deployment target such as Docker, Kubernetes, AWS, or Azure.
