@@ -1,39 +1,53 @@
-name: Hello GitHub Actions
+name: Python CI Pipeline
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 jobs:
-  hello:
+  test:
+    name: Test Application
     runs-on: ubuntu-latest
     steps:
-      - name: Print message
-        run: echo "Hello from GitHub Actions!"
-      - name: Show date
-        run: date
-      - name: Show operating system
-        run: uname -a
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print message
-        run: echo "Hello from GitHub Actions!"
-      - name: Show date
-        run: date
-      - name: Show operating system
-        run: uname -a
-
-  secrets-demo:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check secret
-        env:
-          DEMO_SECRET: ${{ Secrets.DEMO_SECRET }}
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Display Python version
+        run: python --version
+      - name: Install dependencies
         run: |
-          if [ -n "$DEMO_SECRET" ]; then
-            echo "Secret is available."
-          else
-            echo "Secret is not configured."
-            exit 1
-          fi
-
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          pytest -v
+  build:
+    name: Build Application
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Build application
+        run: |
+          chmod +x build.sh
+          ./build.sh
+      - name: Show build output
+        run: |
+          ls -la build
+          cat build/build-info.txt
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-build
+          path: build/
